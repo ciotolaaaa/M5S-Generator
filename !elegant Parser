@@ -1,0 +1,69 @@
+#Non ancora implementato completamente 
+
+from bs4 import BeautifulSoup as bs
+from bs4 import NavigableString
+import requests
+import re
+
+#Updater poco elegante per scaricare tutte le pagine della sezione archivio 
+
+i = 0
+month = 1
+year = 2005
+M5S_raw = open("M5S.txt","w")
+
+while(i < 150):
+    if (month >  9):
+        M5S_raw.write("http://www.beppegrillo.it/"+str(year)+"/"+ str(month)+"/"+"\n");
+    else:
+        M5S_raw.write("http://www.beppegrillo.it/"+str(year)+"/0"+ str(month)+"/"+"\n");
+    if (month == 12):
+        year = year+1
+        month = 1
+    else:
+        month = month +1
+    i = i+1
+M5S_raw.close()
+
+# Salvo tutti i link utili in un foglio di testo
+
+M5S = [addr[:-1] for addr in open("M5S.txt","r")]
+raw = []
+site = []
+
+def siti(indirizzo):
+    addr = (requests.get(indirizzo).text)
+    zuppa = bs(addr,"html.parser").find_all('a')
+    for link in zuppa:
+        if (str(link.get("href")[:27]) =="http://www.beppegrillo.it/2"):
+            raw.append(link.get("href"))   
+for i in M5S:
+    try:
+        siti(i)
+    except TypeError:
+        pass
+        
+M5S_final = open("M5S_final.txt","w")
+for i in raw:
+    M5S_final.write(i+"\n")
+M5S_final.close()
+
+# Salvo il testo di ogni link su un file di testo
+M5S_text = open("M5S_corpus.txt","w", encoding="utf-8")
+def articolo(indirizzo):
+    addr = (requests.get(indirizzo).text)
+    zuppa = bs(addr,"html.parser").find_all('span',{'class':'BodyPost'})
+    for link in zuppa:
+        for testo in link.find_all("p"):
+            M5S_text.write(str(testo.text)+"\n")
+siti = [addr[:-1] for addr in open("M5S_final.txt","r")]
+
+for text in siti:
+    articolo(text)
+    del siti[0]
+    
+M5S_backup = open("M5S_backup.txt","w")
+for i in siti:
+    M5S_backup.write(i+"\n")
+M5S_backup.close()
+M5S_text.close()
